@@ -12,7 +12,7 @@ randInitWorld <- function(dimX, dimY) {
 
 countAliveNeighbors <- function(X) {
   d <- dim(X)
-  C <- apply(merge(1:dim(X)[1], 1:dim(X)[2]), 1, 
+  C <- apply(merge(1:d[1], 1:d[2]), 1, 
         function(i) sum(X[max(1,i[1]-1):min(d[1], i[1]+1), max(1,i[2]-1):min(d[2], i[2]+1)]) - X[i[1],i[2]]
   )
   matrix(C, d[1], d[2])
