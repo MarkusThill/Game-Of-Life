@@ -2,9 +2,9 @@
 # A implementation of the game of life world
 #
 
-DIM_X = 120 # 100
-DIM_Y = 30 # 100
-NUM_GENERATIONS = 2000
+DIM_X = 100 # 100
+DIM_Y = 100 # 100
+NUM_GENERATIONS = 2001
 
 randInitWorld <- function(dimX, dimY) {
   matrix(sample(c(T,F), dimX * dimY, replace = T), dimY, dimX)
@@ -70,25 +70,39 @@ singleRun <- function(doPlot = F, svPlot = F) {
 singleRun(svPlot = T)
 
 # Run many times
-#allRuns <- mclapply(1:100, function(i) singleRun(), mc.cores = 20)
-#saveRDS(allRuns, file="allRuns.rds") # 100x100 dim.
+for(i in rev(3:193)) {
+  DIM_X = i # 100
+  DIM_Y = i # 100
+  allRuns <- mclapply(1:20, function(i) singleRun(), mc.cores = 10)
+  saveRDS(allRuns, file=paste("allRuns",i,".rds", sep="")) # 100x100 dim.
+}
+
 
 library(ggplot2)
-allRuns <- readRDS("allRuns.rds")
+allRuns <- readRDS("allRuns1.rds")
 tmp <- lapply(allRuns, function(i) data.frame(i$numAlive))
 xx <- do.call(cbind.data.frame, tmp)
-df <- data.frame(time=1:nrow(xx), mean=apply(xx, 1, mean), sd = apply(xx, 1, sd))
-df <- cbind(df, se = df$sd / sqrt(length(allRuns)))
+df <- data.frame(time=1:nrow(xx)-1, mean=apply(xx, 1, mean), sd = apply(xx, 1, sd))
+df <- cbind(df, se = df$sd / sqrt(ncol(xx)))
 df <- cbind(df, q = qnorm(p = 0.01, mean = 0, sd = df$se, lower.tail =T)) 
-df <- cbind(df, lwr = df$mean - 2*df$sd, upr=df$mean+2*df$sd) # 2x sd
+df <- cbind(df, lwr = df$mean - 1.96*df$se, upr=df$mean+1.96*df$se)
 #df <- melt(xx, id.vars = "time")
 #df$variable <- NULL
 
+colnames(xx) <- paste(1:ncol(xx))
+dd <- cbind(time=1:nrow(xx)-1, xx)
+all_df <- melt(dd, id.vars = "time")
+
 p <- ggplot(df)+
   #geom_point()+
-  geom_line(aes(time, mean))+
-  geom_ribbon(aes(x=time, ymin=lwr,ymax=upr),alpha=0.3) +
-  #scale_y_log10()+
-  #scale_x_log10()+
-  theme_bw()
+  geom_line(data=all_df, aes(x=time, y=value, color=variable), size=0.4, alpha=0.6)+
+  geom_line(aes(time, mean), size=0.8)+
+  geom_ribbon(aes(x=time, ymin=lwr,ymax=upr),alpha=0.4, colour="red", fill="red") +
+  xlab("iteration") +
+  ylab("cells alive") + 
+  theme_bw() +
+  theme(text = element_text(size=20)) + 
+  theme(legend.position = "none") + 
+  xlim(c(0,1000))
 
+plot(p)
